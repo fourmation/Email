@@ -44,14 +44,14 @@ return array(
             'Zend\Mail' => 'Zend\Mail'
         ),
         'factories' => array(
-            'email_mapper' => function ($sm) {
-//var_dump($sm->get('ViewManager'));
+            'email' => function ($sm) {
+                $config = $sm->get('get_config');
 
                 $mapper = new Email\Mapper\Email;
-                $config = $sm->get('get_config');
                 $mapper->setEntity(new Email\Entity\Email());
                 $mapper->setPathStack($sm->get('ViewTemplateMapResolver'));
                 $mapper->setConfig($config);
+
                 $transport = new \Zend\Mail\Transport\Smtp();
                 $transport->setOptions(new \Zend\Mail\Transport\SmtpOptions($config['transport']['options']));
                 $mapper->setTransport($transport);
@@ -61,13 +61,7 @@ return array(
             'get_config' => function ($sm) {
                 $config = $sm->get('Config');
                 return $config['mail'];
-            },
-            'email' => function ($sm) {
-                //var_dump($sm->get('Config'));
-                return $sm->get('email_mapper');
-            },
-        ),
-    ),
-
-
+            }
+        )
+    )
 );

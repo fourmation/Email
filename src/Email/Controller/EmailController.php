@@ -10,7 +10,6 @@ class EmailController extends AbstractActionController
     public function indexAction()
     {
         $email = $this->getServiceLocator()->get('email');
-
         $email->to('raymond@4mation.com.au')
             ->subject('This is a subject')
             ->text('<strong>This is the body</strong>')

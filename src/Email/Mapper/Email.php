@@ -29,10 +29,19 @@ Class Email
      */
     protected $entity;
 
+    /**
+     * @var
+     */
     protected $pathStack;
 
+    /**
+     * @var
+     */
     protected $config;
 
+    /**
+     * @var
+     */
     protected $transport;
     /**
      * @var
@@ -65,41 +74,45 @@ Class Email
         $this->isInitialized = true;
     }
 
-function generateTemplate($type = 'html')
-{
-    $view = new \Zend\View\Renderer\PhpRenderer();
-    $entity = $this->getEntity();
-    $view->setResolver($this->pathStack);
+    /**
+     * @param string $type
+     * @return string
+     */
+    function generateTemplate($type = 'html')
+    {
+        $entity = $this->getEntity();
+        $config = $this->getConfig();
+        $view = new \Zend\View\Renderer\PhpRenderer();
+        $view->setResolver($this->pathStack);
 
-    if (strlen($entity->getTemplate() > 0)) {
-        $templatePath = 'email/';
-        if ( ! strstr($entity->getTemplate(), '/')) {
-            $templatePath = $entity->getTemplate();
+        if (strlen($entity->getTemplate() > 0)) {
+            $templatePath = 'email/';
+            if ( ! strstr($entity->getTemplate(), '/')) {
+                $templatePath = $entity->getTemplate();
+            } else {
+                $templatePath .= $entity->getTemplate();
+            }
         } else {
-            $templatePath .= $entity->getTemplate();
+            $templatePath = 'email/default';
         }
-    } else {
-        $templatePath = 'email/default';
+
+        if ($type == 'html') {
+            $content = $entity->getHtml();
+        } else {
+            $content = $entity->getText();
+        }
+
+        $viewModel = new \Zend\View\Model\ViewModel(
+            array_merge(array('content' => $content), $entity->getVars())
+        );
+        $viewModel->setTemplate($templatePath);
+
+        $layout = new \Zend\View\Model\ViewModel(array('content' => $content, 'site_name' => $config['site_name']));
+        $layout->setTerminal(true);
+        $layout->setTemplate('layout/' . $type);
+
+        return $view->render($layout);
     }
-
-    if ($type == 'html') {
-        $content = $entity->getHtml();
-    } else {
-        $content = $entity->getText();
-    }
-
-    $viewModel = new \Zend\View\Model\ViewModel(array_merge(array('content' => $content), $entity->getVars()));
-    $viewModel->setTemplate($templatePath);
-
-
-    $layout = new \Zend\View\Model\ViewModel(array('content' => $content));
-    $layout->setTerminal(true);
-    $layout->setTemplate('layout/' . $type);
-
-    $layout->addChild($viewModel, 'content');
-
-    return $view->render($layout);
-}
 
     /**
      * Sends an email with the options specified
@@ -110,7 +123,6 @@ function generateTemplate($type = 'html')
     function send()
     {
         $entity = $this->getEntity();
-
         $config = $this->config;
 
         $defaultOptions = array(
@@ -142,7 +154,6 @@ function generateTemplate($type = 'html')
 
             $htmlPart = new MimePart($html_body);
             $htmlPart->type = "text/html";
-
             $textPart = new MimePart($text_body);
             $textPart->type = "text/plain";
 
@@ -171,16 +182,20 @@ function generateTemplate($type = 'html')
         $message->setSubject($entity->getSubject());
         $message->setEncoding("UTF-8");
         $message->setBody($body);
-        $message->getHeaders()->get('content-type');
+        //$message->getHeaders()->get('content-type');
 
         if (in_array($entity->getEmailType(), array('html', 'both'))) {
-            $message->setType('multipart/alternative');
+            $message->getHeaders()->get('content-type')->setType('text/html');
         }
 
         $transport = $this->getTransport();
         $transport->send($message);
     }
 
+    /**
+     * @param $subject
+     * @return $this
+     */
     public function subject($subject)
     {
         $entity = $this->getEntity();
@@ -189,6 +204,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $html
+     * @return $this
+     */
     public function html($html)
     {
         $entity = $this->getEntity();
@@ -197,6 +216,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $text
+     * @return $this
+     */
     public function text($text)
     {
         $entity = $this->getEntity();
@@ -205,6 +228,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param array $body
+     * @return $this
+     */
     public function body($body = array())
     {
         if (isset($body['html'])) {
@@ -217,6 +244,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $to
+     * @return $this
+     */
     public function to($to)
     {
         $entity = $this->getEntity();
@@ -225,6 +256,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $from
+     * @return $this
+     */
     public function from($from)
     {
         $entity = $this->getEntity();
@@ -233,6 +268,11 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $type
+     * @return $this
+     * @throws Exception\EmailException
+     */
     public function setType($type)
     {
         $entity = $this->getEntity();
@@ -246,6 +286,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param $template
+     * @return $this
+     */
     public function setTemplate($template)
     {
         $entity = $this->getEntity();
@@ -254,6 +298,10 @@ function generateTemplate($type = 'html')
         return $this;
     }
 
+    /**
+     * @param array $vars
+     * @return $this
+     */
     public function setVars($vars = array())
     {
         $entity = $this->getEntity();
@@ -294,22 +342,47 @@ function generateTemplate($type = 'html')
         return $this->entity;
     }
 
+    /**
+     * @param $pathStack
+     * @return $this
+     */
     public function setPathStack($pathStack)
     {
         $this->pathStack = $pathStack;
         return $this;
     }
 
+    /**
+     * @param $config
+     * @return $this
+     */
     public function setConfig($config)
     {
         $this->config = $config;
         return $this;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
+    /**
+     * @param $transport
+     * @return $this
+     */
     public function setTransport($transport)
     {
         $this->transport = $transport;
         return $this;
     }
+
+    /**
+     * @return mixed
+     */
     public function getTransport()
     {
         return $this->transport;
