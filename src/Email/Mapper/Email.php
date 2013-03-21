@@ -168,7 +168,7 @@ Class Email
         $message = new Mail\Message();
         $message->setFrom($from);
 
-        if ('development' == APPLICATION_ENV) {
+        if ($config['development_mode']) {
             $to = $config['dev_email'];
         }
 
