@@ -85,12 +85,12 @@ Class Email
         $view = new \Zend\View\Renderer\PhpRenderer();
         $view->setResolver($this->pathStack);
 
-        if (strlen($entity->getTemplate() > 0)) {
+        if (strlen($entity->getTemplate()) > 0) {
             $templatePath = 'email/';
-            if ( ! strstr($entity->getTemplate(), '/')) {
-                $templatePath = $entity->getTemplate();
-            } else {
+            if (strpos($entity->getTemplate(), '/') === false) {
                 $templatePath .= $entity->getTemplate();
+            } else {
+                $templatePath = $entity->getTemplate();
             }
         } else {
             $templatePath = 'email/default';
@@ -107,7 +107,7 @@ Class Email
         );
         $viewModel->setTemplate($templatePath);
 
-        $layout = new \Zend\View\Model\ViewModel(array('content' => $content, 'site_name' => $config['site_name']));
+        $layout = new \Zend\View\Model\ViewModel(array('content' => $view->render($viewModel), 'site_name' => $config['site_name']));
         $layout->setTerminal(true);
         $layout->setTemplate('layout/' . $type);
 
@@ -136,28 +136,40 @@ Class Email
         $body = new MimeMessage();
 
         if ('html' == $entity->getEmailType()) {
-            $html_body = $this->generateTemplate('html');
-            $htmlPart = new MimePart($html_body);
+            $htmlBody = $this->generateTemplate('html');
+            $htmlPart = new MimePart($htmlBody);
             $htmlPart->type = "text/html";
 
             $partArray = array($htmlPart);
 
         } else if ('text' == $entity->getEmailType()) {
-            $text_body = $this->generateTemplate('text');
-            $textPart = new MimePart($text_body);
+            $textBody = $this->generateTemplate('text');
+            $textPart = new MimePart($textBody);
             $textPart->type = "text/plain";
 
             $partArray = array($textPart);
         } else {
-            $text_body = $this->generateTemplate('text');
-            $html_body = $this->generateTemplate('html');
+            $textBody = $this->generateTemplate('text');
+            $htmlBody = $this->generateTemplate('html');
 
-            $htmlPart = new MimePart($html_body);
+            $htmlPart = new MimePart($htmlBody);
             $htmlPart->type = "text/html";
-            $textPart = new MimePart($text_body);
+            $textPart = new MimePart($textBody);
             $textPart->type = "text/plain";
 
             $partArray = array($textPart, $htmlPart);
+        }
+
+        //handle attachments
+        $attachments = $entity->getAttachment();
+        if ( ! empty($attachments)) {
+            $attachment = new MimePart(fopen($attachments['file'], 'r+'));
+            $attachment->type = $attachments['type'];
+            $attachment->disposition = 'attachment';
+            $attachment->encoding = 'base64';
+            $attachment->filename = 'test.xls';
+
+            $partArray = array_merge($partArray, array($attachment));
         }
 
         $body->setParts($partArray);
@@ -182,9 +194,10 @@ Class Email
         $message->setSubject($entity->getSubject());
         $message->setEncoding("UTF-8");
         $message->setBody($body);
-        //$message->getHeaders()->get('content-type');
 
-        if (in_array($entity->getEmailType(), array('html', 'both'))) {
+        if ( ! empty($attachments)) {
+            $message->getHeaders()->get('content-type')->setType('multipart/mixed');
+        } else if (in_array($entity->getEmailType(), array('html', 'both'))) {
             $message->getHeaders()->get('content-type')->setType('text/html');
         }
 
@@ -386,5 +399,17 @@ Class Email
     public function getTransport()
     {
         return $this->transport;
+    }
+
+    /**
+     * @param array $attachmentOptions
+     * @return $this
+     */
+    public function attachment($attachmentOptions)
+    {
+        $entity = $this->getEntity();
+        $entity->setAttachment($attachmentOptions);
+
+        return $this;
     }
 }

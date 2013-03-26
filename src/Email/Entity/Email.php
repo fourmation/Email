@@ -2,11 +2,6 @@
 
 namespace Email\Entity;
 
-    /**
-     * Class Email
-     *
-     * @package Email\Entity
-     */
 /**
  * Class Email
  * @package Email\Entity
@@ -37,6 +32,18 @@ class Email
      * @var
      */
     protected $emailType;
+    /**
+     * @var
+     */
+    protected $template;
+    /**
+     * @var
+     */
+    protected $vars;
+    /**
+     * @var
+     */
+    protected $attachment = array();
 
     /**
      * @param  $template
@@ -69,15 +76,6 @@ class Email
     {
         return $this->vars;
     }
-    /**
-     * @var
-     */
-    protected $template;
-    /**
-     * @var
-     */
-    protected $vars;
-
 
     /**
      * @param $body
@@ -195,4 +193,19 @@ class Email
         return $this->text;
     }
 
+    /**
+     * @param  array $attachment
+     */
+    public function setAttachment($attachment)
+    {
+        $this->attachment = $attachment;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAttachment()
+    {
+        return $this->attachment;
+    }
 }

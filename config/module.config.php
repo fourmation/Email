@@ -26,7 +26,6 @@ return array(
         ),
     ),
     'view_manager' => array(
-
         'template_path_stack' => array(
             __DIR__ . '/../view',
         ),
@@ -45,7 +44,7 @@ return array(
         ),
         'factories' => array(
             'email' => function ($sm) {
-                $config = $sm->get('get_config');
+                $config = $sm->get('email\get_config');
 
                 $mapper = new Email\Mapper\Email;
                 $mapper->setEntity(new Email\Entity\Email());
@@ -58,7 +57,7 @@ return array(
 
                 return $mapper;
             },
-            'get_config' => function ($sm) {
+            'email\get_config' => function ($sm) {
                 $config = $sm->get('Config');
                 return $config['mail'];
             }
