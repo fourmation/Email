@@ -51,8 +51,17 @@ return array(
                 $mapper->setPathStack($sm->get('ViewTemplateMapResolver'));
                 $mapper->setConfig($config);
 
-                $transport = new \Zend\Mail\Transport\Smtp();
-                $transport->setOptions(new \Zend\Mail\Transport\SmtpOptions($config['transport']['options']));
+                // Select default transport based on config options
+                if (strtolower($config['transport']['default']) == 'smtp') {
+                    $transport = new \Zend\Mail\Transport\Smtp();
+                    $transport->setOptions(new \Zend\Mail\Transport\SmtpOptions($config['transport']['options']));
+                } elseif (strtolower($config['transport']['default']) == 'sendmail') {
+                    $transport = new \Zend\Mail\Transport\Sendmail();
+                } else {
+                    // Default option
+                    $transport = new \Zend\Mail\Transport\Sendmail();
+                }
+                
                 $mapper->setTransport($transport);
 
                 return $mapper;
