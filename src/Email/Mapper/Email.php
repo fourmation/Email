@@ -167,7 +167,7 @@ Class Email
             $attachment->type = $attachments['type'];
             $attachment->disposition = 'attachment';
             $attachment->encoding = 'base64';
-            $attachment->filename = 'test.xls';
+            $attachment->filename = isset($attachments['filename']) ? $attachments['filename'] : 'attachment.xls';
 
             $partArray = array_merge($partArray, array($attachment));
         }
